@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Mundo do Conhecimento 3D - Corrigido</title>
+<style>
+  html, body { margin:0; height:100%; overflow:hidden; }
+  #renderCanvas { width:100%; height:100%; }
+  #quizBox {
+    position:absolute; bottom:20px; left:20px;
+    background:white; padding:15px; border-radius:10px; display:none;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="renderCanvas"></canvas>
+
+<div id="quizBox">
+  <p id="pergunta"></p>
+  <div id="opcoes"></div>
+</div>
+
+<script src="https://cdn.babylonjs.com/babylon.js"></script>
+<script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+
+<script>
+const canvas = document.getElementById("renderCanvas");
+const engine = new BABYLON.Engine(canvas, true);
+
+let score = 0;
+let fase = 1;
+let acertos = 0;
+let player;
+
+const bancoQuestoes = {
+  "1": [
+    { p: "2 + 2 = ?", o:["3","4","5"], r:1 },
+    { p: "5 - 2 = ?", o:["2","3","4"], r:1 },
+    { p: "Animal vertebrado?", o:["cachorro","pedra","água"], r:0 },
+  ],
+  "2": [
+    { p: "7 x 8 = ?", o:["54","56","58"], r:1 },
+    { p: "Plural de flor?", o:["flors","flores","flore"], r:1 },
+  ],
+  "3": [
+    { p: "25 x 4 = ?", o:["80","90","100"], r:2 },
+    { p: "Planeta mais próximo do sol?", o:["Terra","Mercúrio","Marte"], r:1 },
+  ]
+};
+
+function getPerguntas(){
+  return bancoQuestoes[fase.toString()] || bancoQuestoes["1"];
+}
+
+function criarCena() {
+  const scene = new BABYLON.Scene(engine);
+
+  const camera = new BABYLON.UniversalCamera("cam",
+    new BABYLON.Vector3(0, 2, -10), scene);
+  camera.attachControl(canvas, true);
+
+  new BABYLON.HemisphericLight("luz",
+    new BABYLON.Vector3(0, 1, 0), scene);
+
+  const ground = BABYLON.MeshBuilder.CreateGround("ground",
+    {width:50, height:50}, scene);
+
+  // textura no chão
+  const mat = new BABYLON.StandardMaterial("mat", scene);
+  mat.diffuseTexture = new BABYLON.Texture(
+    "https://assets.babylonjs.com/environments/grass.jpg", scene);
+  ground.material = mat;
+
+  // Avatar corrigido
+  BABYLON.SceneLoader.ImportMesh("", 
+    "https://assets.babylonjs.com/meshes/", 
+    "Dude.babylon", 
+    scene, 
+    function(meshes){
+      player = meshes[0];
+      player.scaling = new BABYLON.Vector3(0.02,0.02,0.02);
+      player.position = new BABYLON.Vector3(0,0,0);
+  });
+
+  // blocos interativos
+  for(let i=0;i<10;i++){
+    let bloco = BABYLON.MeshBuilder.CreateBox("b"+i,{size:2},scene);
+    bloco.position.x = Math.random()*20-10;
+    bloco.position.z = Math.random()*20-10;
+    bloco.position.y = 1;
+
+    bloco.actionManager = new BABYLON.ActionManager(scene);
+    bloco.actionManager.registerAction(
+      new BABYLON.ExecuteCodeAction(
+        BABYLON.ActionManager.OnPickTrigger,
+        function(){ abrirPergunta(); }
+      )
+    );
+  }
+
+  return scene;
+}
+
+const scene = criarCena();
+
+// movimento
+let input = {};
+window.addEventListener("keydown", e => input[e.key] = true);
+window.addEventListener("keyup", e => input[e.key] = false);
+
+scene.onBeforeRenderObservable.add(() => {
+  if(!player) return;
+  if(input["w"]) player.position.z += 0.1;
+  if(input["s"]) player.position.z -= 0.1;
+  if(input["a"]) player.position.x -= 0.1;
+  if(input["d"]) player.position.x += 0.1;
+});
+
+// quiz
+function abrirPergunta(){
+  let lista = getPerguntas();
+  let q = lista[Math.floor(Math.random()*lista.length)];
+
+  document.getElementById("quizBox").style.display = "block";
+  document.getElementById("pergunta").innerText = q.p;
+
+  let opHTML = "";
+  q.o.forEach((op,i)=>{
+    opHTML += `<button onclick="responder(${i},${q.r})">${op}</button><br>`;
+  });
+
+  document.getElementById("opcoes").innerHTML = opHTML;
+}
+
+function responder(escolha, correta){
+  if(escolha === correta){
+    alert("✔ Acertou!");
+    score += 10;
+    acertos++;
+  } else {
+    alert("❌ Errou!");
+  }
+
+  if(acertos >= 3){
+    fase++;
+    acertos = 0;
+    alert("🚀 Avançou para fase " + fase);
+  }
+
+  document.getElementById("quizBox").style.display = "none";
+}
+
+engine.runRenderLoop(()=> scene.render());
+window.addEventListener("resize", ()=> engine.resize());
+</script>
+
+</body>
+</html>
