@@ -66,6 +66,34 @@ function criarCena() {
   const ground = BABYLON.MeshBuilder.CreateGround("ground",
     {width:50, height:50}, scene);
 
+  // 1. Correção da Textura do Chão
+const mat = new BABYLON.StandardMaterial("mat", scene);
+mat.diffuseTexture = new BABYLON.Texture(
+  "https://assets.babylonjs.com/textures/grass.jpg", scene);
+ground.material = mat;
+
+// 2. Correção do Personagem (Avatar)
+BABYLON.SceneLoader.ImportMesh("", 
+  "https://models.babylonjs.com/dude/", // Novo caminho base
+  "dude.babylon",                       // Nome do arquivo (minúsculo)
+  scene, 
+  function(meshes, particleSystems, skeletons){
+    // Criamos um nó para agrupar todas as partes (corpo, olhos, etc)
+    player = new BABYLON.TransformNode("playerNode");
+    meshes.forEach(m => {
+      m.parent = player;
+    });
+
+    player.scaling = new BABYLON.Vector3(0.02, 0.02, 0.02);
+    player.position = new BABYLON.Vector3(0, 0, 0);
+    player.rotation.y = Math.PI; // Ajusta a direção inicial
+    
+    // Inicia a animação de caminhada
+    if (skeletons.length > 0) {
+        scene.beginAnimation(skeletons[0], 0, 100, true);
+    }
+});
+/*
   // textura no chão
   const mat = new BABYLON.StandardMaterial("mat", scene);
   mat.diffuseTexture = new BABYLON.Texture(
@@ -93,7 +121,7 @@ function criarCena() {
     // Inicia a animação (opcional)
     scene.beginAnimation(skeletons[0], 0, 100, true);
   });
- /* BABYLON.SceneLoader.ImportMesh("", 
+    BABYLON.SceneLoader.ImportMesh("", 
     "https://assets.babylonjs.com/meshes/", 
     "Dude.babylon", 
     scene, 
