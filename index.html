@@ -73,7 +73,27 @@ function criarCena() {
   ground.material = mat;
 
   // Avatar corrigido
+  
   BABYLON.SceneLoader.ImportMesh("", 
+   "https://assets.babylonjs.com/meshes/", 
+   "Dude.babylon", 
+  scene, 
+  function(meshes, particleSystems, skeletons){
+    // Criamos um nó pai para carregar todas as partes do personagem juntas
+    player = new BABYLON.TransformNode("playerNode");
+    meshes.forEach(m => {
+      m.parent = player;
+    });
+
+    player.scaling = new BABYLON.Vector3(0.02, 0.02, 0.02);
+    player.position = new BABYLON.Vector3(0, 0, 0);
+    // O Dude vem "deitado", precisamos rotacionar 180 graus no Y
+    player.rotation.y = Math.PI; 
+    
+    // Inicia a animação (opcional)
+    scene.beginAnimation(skeletons[0], 0, 100, true);
+  });
+ /* BABYLON.SceneLoader.ImportMesh("", 
     "https://assets.babylonjs.com/meshes/", 
     "Dude.babylon", 
     scene, 
@@ -82,7 +102,7 @@ function criarCena() {
       player.scaling = new BABYLON.Vector3(0.02,0.02,0.02);
       player.position = new BABYLON.Vector3(0,0,0);
   });
-
+*/
   // blocos interativos
   for(let i=0;i<10;i++){
     let bloco = BABYLON.MeshBuilder.CreateBox("b"+i,{size:2},scene);
@@ -116,7 +136,13 @@ scene.onBeforeRenderObservable.add(() => {
   if(input["a"]) player.position.x -= 0.1;
   if(input["d"]) player.position.x += 0.1;
 });
-
+ scene.onBeforeRenderObservable.add(() => {
+  if(!player) return;
+  if(input["w"]) { player.position.z += 0.1; player.rotation.y = Math.PI; }
+  if(input["s"]) { player.position.z -= 0.1; player.rotation.y = 0; }
+  if(input["a"]) { player.position.x -= 0.1; player.rotation.y = Math.PI / 2; }
+  if(input["d"]) { player.position.x += 0.1; player.rotation.y = -Math.PI / 2; }
+});
 // quiz
 function abrirPergunta(){
   let lista = getPerguntas();
